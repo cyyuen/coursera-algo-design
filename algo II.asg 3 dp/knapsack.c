@@ -3,15 +3,7 @@
 
 const int MAXCAP = 100000000;
 
-int A[2][MAXCAP];
-
-int prev(int i) {
-	return i == 0? 1 : 0;
-}
-
-int next(int i) {
-	return i == 0? 1 : 0;
-}
+int A[MAXCAP];
 
 int max(int a, int b) {
 	if (a > b)
@@ -37,27 +29,14 @@ int main(int argc, char const *argv[])
 		
 		scanf("%u %u", &v, &w);
 
-		for(int j = 1; j <= cap; ++j) {
-
-			int up = prev(idx);
-
+		for(int j = cap; j > w; --j) {
 			int v1, v2;
 
-			v1 = A[up][j];
-
-			if (j-w < 1) {
-				v2 = 0;
-			} else {
-				v2 = A[up][j-w] + v;
-			}
-
-			A[idx][j] = max(v1, v2);
+			A[j] = max(A[j], A[j-w] + v);
 		}
-		
-		idx = next(idx);
 	}
 
-	printf("%u\n", A[prev(idx)][cap]);
+	printf("%u\n", A[cap]);
 	
 	return 0;
 }
