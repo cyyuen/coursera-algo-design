@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
 
 	scanf("%u %u", &cap, &size);
 
-	memset(A, 0, 2 * MAXCAP);
+	memset(A, 0, MAXCAP);
 
 	int v, w;
 
