@@ -1,12 +1,13 @@
 CC=clang
-CFLAGS=-c -Wall
+CFLAGS=-lphi
+LIB=-lphi
 
 all: clean mincut
 
 mincut:
-	$(CC) mincut.c ../lib/stack.c -o mincut
+	$(CC) mincut.c -o mincut $(LIB)
 
-clean:
+clear:
 	rm -rf mincut
 
 test:

@@ -4,44 +4,44 @@
 #include <string.h>
 #include <time.h>
 
-#include "../lib/stack.h"
+#include <phi/randset.h>
 
 const int N = 205;
 const int L = 10000;
 const char* D = " \t\n";
 
 typedef struct{
-	int id;
-	Stack* adjc;
+	unsigned id;
+	RandSet* adjc;
 } Vertex;
 
-int
+unsigned
 vertex_id(void* v) {
 	return ((Vertex*)v)->id;
 }
 
 void
 add_adjc(Vertex* v, Vertex* u) {
-	stack_push(v->adjc, (void*)u);
+	randset_push(v->adjc, (void*)u);
 }
 
 // vertex* array A is also a random set
-int DATA[N][N];
+unsigned DATA[N][N];
 Vertex** A;
-Stack* V;
+RandSet* V;
 
 int size = 0;
 
 Vertex*
-get_vertex(int index) {
+get_vertex(unsigned index) {
 	if (A[index] == NULL) {
 
 		Vertex* v = (Vertex*) malloc(sizeof(Vertex));
 
 		v->id = index;
-		v->adjc = new_stack(N, &vertex_id);
+		v->adjc = new_randset(N, &vertex_id);
 
-		stack_push(V, v);
+		randset_push(V, v);
 
 		A[index] = v;
 
@@ -54,7 +54,7 @@ get_vertex(int index) {
 
 
 char*
-inttok(char * str, int * i, const char * delimiters) {
+inttok(char * str, unsigned * i, const char * delimiters) {
 
 	char* tok = strtok (str, delimiters);
 
@@ -62,7 +62,7 @@ inttok(char * str, int * i, const char * delimiters) {
 		return NULL;
 	}
 	
-	*i = atoi(tok);
+	*i = (unsigned)atoi(tok);
 	
 	return tok;
 }
@@ -70,66 +70,64 @@ inttok(char * str, int * i, const char * delimiters) {
 Vertex* 
 vertex_merge(Vertex* v, Vertex* u) {
 
-	v->adjc = stack_merge(v->adjc, u->adjc);
+	v->adjc = randset_merge(v->adjc, u->adjc);
 
-	stack_remove(v->adjc, v);
+	randset_remove(v->adjc, v);
 
-	int size = stack_size(v->adjc);
+	int size = randset_size(v->adjc);
 
 	for (int i = 0; i!=size; ++i) {
 		Vertex* e = v->adjc->buf[i];
 
-		stack_remove(e->adjc, v);
+		randset_remove(e->adjc, v);
 
-		stack_remove(e->adjc, u);
+		randset_remove(e->adjc, u);
 
-		stack_push_w(e->adjc, v, stack_e_weight(v->adjc, e));
+		randset_mulpush(e->adjc, v, randset_e_weight(v->adjc, e));
 	}
 
 	return v;
 }
 
 int random_contrat() {
+
 	Vertex *v, *u;
 
-	while(stack_size(V) > 2) {
-		// randomly choose an edges
-		v = (Vertex*)stack_rand_pop(V);
-		u = (Vertex*)stack_rand_pop(v->adjc);
+	while(randset_size(V) > 2) {
 
-		stack_dump(V);
+		v = (Vertex*)randset_pop(V);
 
-		stack_remove(V, u);
+		u = (Vertex*)randset_pop(v->adjc);
+
+		randset_remove(V, u);
 
 		Vertex* w = vertex_merge(v, u);
 
-		stack_push(V, w);
+		randset_push(V, w);
 	}
 
-	v = (Vertex*)stack_rand_pop(V);
-	u = (Vertex*)stack_rand_pop(V);
+	v = (Vertex*)randset_pop(V);
+	u = (Vertex*)randset_pop(V);
 
-	return stack_e_weight(v->adjc, u);
+	return randset_e_weight(v->adjc, u);
 }
 
 int do_contract(int num_of_n) {
 	A = malloc(sizeof(Vertex*) * N);
-	V = new_stack(N, &vertex_id);
+	V = new_randset(N, &vertex_id);
 
-	for (int i = 0; i < num_of_n; ++i)
+	for (unsigned i = 0; i < num_of_n; ++i)
 	{
 		int num_ajdc = DATA[i][0];
 		Vertex* v = get_vertex(i);
 
-		for (int j = 0; j < num_ajdc; ++j)
+		for (unsigned j = 0; j < num_ajdc; ++j)
 		{
-			int uid = DATA[i][j+1];
+			unsigned uid = DATA[i][j+1];
 
 			Vertex* u = get_vertex(uid);
 			add_adjc(v, u);
-
 		}
-
 	}
 
 	return random_contrat();
@@ -138,7 +136,7 @@ int do_contract(int num_of_n) {
 
 int main(int argc, char const *argv[])
 {
-	//V = new_stack(N, &vertex_id);
+	//V = new_randset(N, &vertex_id);
 	memset(DATA, 0, N*N);
 
 	char line[L];
@@ -150,16 +148,19 @@ int main(int argc, char const *argv[])
    	/* Intializes random number generator */
    	srand((unsigned) time(&t));
 
+   	/**
+   		Store the data for multiple random contraction
+   	 */
 	while(!feof(stdin)) {
 		
 		fgets(line, L, stdin);
 
-		int vid = 0, adjc = 0;
+		unsigned vid = 0, adjc = 0;
 
 		inttok(line, &vid, D);
 
-		int num_adjc = 0;
-		int start_p = 1;
+		unsigned num_adjc = 0;
+		unsigned start_p = 1;
 
 		while(inttok(NULL, &adjc, D) != NULL) {
 			DATA[vid-1][start_p] = adjc-1;
@@ -185,6 +186,7 @@ int main(int argc, char const *argv[])
 		if (j < i) {
 			i = j;
 		}
+
 	}
 
 	printf("%d\n", i);
