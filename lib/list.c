@@ -1,9 +1,23 @@
 #include <stdlib.h>
 
-#include <phi/list.h>
+#include "list.h"
+
+struct _Node {
+	ListValue val;
+	Node* next;
+	Node* prev;
+};
+
+struct _List {
+	Node* head;
+	
+	unsigned size;
+
+	Node* iter;
+};
 
 Node* 
-new_node (void* val) {
+new_node (ListValue val) {
 	Node* n = (Node*)malloc(sizeof(Node));
 
 	n->val = val;
@@ -11,6 +25,12 @@ new_node (void* val) {
 	n->prev = NULL;
 
 	return n;
+}
+
+ListValue 
+node_value(Node* n)
+{
+	return n->val;
 }
 
 void 
@@ -44,7 +64,7 @@ new_list() {
 void list_delete(List*);
 
 void 
-ls_insert(List* l, void* val) {
+ls_insert(List* l, ListValue val) {
 	Node* n = new_node(val);
 
 	if (l->head != NULL) {
@@ -80,7 +100,7 @@ ls_next(List* l) {
 }
 
 void 
-ls_foreach (List* l, void (*func)(List*, Node*)) {
+ls_foreach (List* l, ListIterFunc func) {
 	for (Node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l))
 	{
 		(*func)(l, n);

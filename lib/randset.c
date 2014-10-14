@@ -2,8 +2,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <phi/randset.h>
-#include <phi/list.h>
+#include "randset.h"
+#include "hashtbl.h"
+
+struct _RandSet
+{
+	RandSetValue* buf;
+	unsigned top;
+	unsigned cap;
+
+	// key position mapping
+	Hashtbl* kpmap;
+
+	RandSetKeyFunc keyfunc;
+
+	unsigned iter;
+};
 
 typedef struct{
 	unsigned key;
@@ -22,22 +36,24 @@ new_kpmap(unsigned key, unsigned pos)
 }
 
 static unsigned
-kpmap_keyfunc (void* val) {
+kpmap_keyfunc (RandSetValue val) {
 	return ((KPMap*)val)->key;
 }
 
 RandSet*
-new_randset(unsigned cap, unsigned (*keyfunc)(void*))
+new_randset(unsigned cap, RandSetKeyFunc keyfunc)
 {
 	RandSet* s = malloc(sizeof(RandSet));
 	s->cap = cap;
 
-	s->buf = malloc(sizeof(void*) * s->cap);
+	s->buf = malloc(sizeof(RandSetValue) * s->cap);
 	s->top = 0;
 
 	s->kpmap = new_hashtbl(cap, &kpmap_keyfunc);
 
 	s->keyfunc = keyfunc;
+
+	s->iter = 0;
 
 	return s;
 }
@@ -53,8 +69,34 @@ randset_last(RandSet* s) {
 	return randset_size(s) - 1;
 }
 
+bool 
+randset_is_end(RandSet* s) 
+{
+	return s->iter == randset_size(s);
+}
+
+RandSetValue 
+randset_iter(RandSet* s) 
+{	
+	s->iter = 0;
+
+	return s->buf[s->iter];
+};
+
+RandSetValue 
+randset_next(RandSet* s) 
+{
+	if (randset_is_end(s)) {
+		return NULL;
+	}
+
+	s->iter = (s->iter) + 1;
+
+	return s->buf[s->iter];
+}
+
 void
-randset_mulpush(RandSet* s, void* val, int k) {
+randset_mulpush(RandSet* s, RandSetValue val, int k) {
 	unsigned key = (*s->keyfunc)(val);
 
 	HTNode* n = ht_lookup(s->kpmap, key);
@@ -69,21 +111,21 @@ randset_mulpush(RandSet* s, void* val, int k) {
 
 		s->top++;
 	} else {
-		n->num += k;
+		ht_mulinsert(s->kpmap, ht_value(n), k);
 	}
 }
 
 void
-randset_push(RandSet* s, void* val) {
+randset_push(RandSet* s, RandSetValue val) {
 	randset_mulpush(s, val, 1);
 }
 
-void*
+RandSetValue
 randset_get(RandSet* s, unsigned idx) {
 	return s->buf[idx];
 }
 
-void* 
+RandSetValue 
 randset_pop_at(RandSet* s, unsigned idx) 
 {
 	if (idx > randset_last(s) || randset_size(s) == 0) {
@@ -91,7 +133,7 @@ randset_pop_at(RandSet* s, unsigned idx)
 		return NULL;
 	}
 
-	void* v = randset_get(s, idx);
+	RandSetValue v = randset_get(s, idx);
 	unsigned vkey = s->keyfunc(v);
 
 	ht_delete(s->kpmap,  vkey);
@@ -99,7 +141,7 @@ randset_pop_at(RandSet* s, unsigned idx)
 	if (idx != randset_last(s)) {
 
 		// move the last element to the idx
-		void* u = s->buf[randset_last(s)];
+		RandSetValue u = s->buf[randset_last(s)];
 
 		s->buf[idx] = u;
 
@@ -107,7 +149,7 @@ randset_pop_at(RandSet* s, unsigned idx)
 
 		HTNode* htn = ht_lookup(s->kpmap, ukey);
 
-		((KPMap*)htn->val)->pos = idx;
+		((KPMap*)ht_value(htn))->pos = idx;
 	}
 	
 	s->top--;
@@ -116,7 +158,7 @@ randset_pop_at(RandSet* s, unsigned idx)
 }
 
 void
-randset_remove(RandSet* s, void* ele) {
+randset_remove(RandSet* s, RandSetValue ele) {
 	unsigned key = (*s->keyfunc)(ele);
 
 	HTNode* n = ht_lookup(s->kpmap, key);
@@ -125,38 +167,37 @@ randset_remove(RandSet* s, void* ele) {
 		return;
 	}
 
-	unsigned idx = ((KPMap*)n->val)->pos;
+	unsigned idx = ((KPMap*)ht_value(n))->pos;
 	
 	randset_pop_at(s, idx);
 }
 
-void*
+RandSetValue
 randset_pop(RandSet* s) {
 	unsigned idx = rand() % randset_size(s);
 	return randset_pop_at(s, idx);
 }
 
 int
-randset_e_weight(RandSet* s, void* e) 
+randset_e_weight(RandSet* s, RandSetValue e) 
 {
 	unsigned key = (*s->keyfunc)(e);
 
-	return (ht_lookup(s->kpmap, key))->num;
+	return ht_weight(ht_lookup(s->kpmap, key));
 }
 
 /*
  * This two RandSet must use the same keyfunc
  */
-void*
+RandSet*
 randset_merge(RandSet* v, RandSet* u) {
 	// use RandSet v as based RandSet
-	int usize = randset_size(u);
 
-	for (int i = 0; i != usize; ++i) {
-		// iterate each element in u's buf
-		void* e = u->buf[i];
+	for (RandSetValue i = randset_iter(u); 
+		 !randset_is_end(u); 
+		 i = randset_next(u)) {
 
-		randset_mulpush(v, e, randset_e_weight(u, e));
+		randset_mulpush(v, i, randset_e_weight(u, i));
 	}
 
 	return v;
@@ -164,9 +205,9 @@ randset_merge(RandSet* v, RandSet* u) {
 
 static void
 randset_ht_dump_helper(HTNode* n) {
-	KPMap* m = n->val;
+	KPMap* m = ht_value(n);
 
-	printf("(%u:%u)", m->pos, n->num);
+	printf("(%u:%u)", m->pos, ht_weight(n));
 }
 
 void randset_dump(RandSet* s) {
@@ -174,10 +215,15 @@ void randset_dump(RandSet* s) {
 	printf("top:%u cap:%u\n", s->top, s->cap);
 
 	printf("ids:");
-	for (int i = 0; i < randset_size(s); ++i)
-	{
-		printf("%d\t", (*(s->keyfunc))(s->buf[i]));
+
+	for (RandSetValue i = randset_iter(s); 
+		 !randset_is_end(s); 
+		 i = randset_next(s)) {
+		printf("%d\t", (*(s->keyfunc))(i));
 	}
+
+	printf("\n");
+
 	printf("\n");
 
 	ht_dump(s->kpmap, &randset_ht_dump_helper);

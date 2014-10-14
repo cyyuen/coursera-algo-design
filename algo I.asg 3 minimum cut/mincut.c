@@ -74,16 +74,15 @@ vertex_merge(Vertex* v, Vertex* u) {
 
 	randset_remove(v->adjc, v);
 
-	int size = randset_size(v->adjc);
+	for (Vertex* i = randset_iter(v->adjc); 
+		 !randset_is_end(v->adjc);
+		 i = randset_next(v->adjc))
+	{
+		randset_remove(i->adjc, v);
 
-	for (int i = 0; i!=size; ++i) {
-		Vertex* e = v->adjc->buf[i];
+		randset_remove(i->adjc, u);
 
-		randset_remove(e->adjc, v);
-
-		randset_remove(e->adjc, u);
-
-		randset_mulpush(e->adjc, v, randset_e_weight(v->adjc, e));
+		randset_mulpush(i->adjc, v, randset_e_weight(v->adjc, i));
 	}
 
 	return v;

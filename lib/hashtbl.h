@@ -1,39 +1,29 @@
 #ifndef PHI_HASHTBL_H
 #define PHI_HASHTBL_H
 
-#include "list.h"
-
 /**
  * Hash Table 
  * 
  * Use chaining implementation
  */
-typedef struct
-{
-	// the content
-	void* val;
+typedef struct _HTNode HTNode;
 
-	unsigned key;
+typedef struct _Hashtbl Hashtbl;
 
-	// the number of the node. there're redundent nodes
-	unsigned num;
+typedef void* HashtblValue;
 
-} HTNode;
+typedef unsigned (*HashtblKeyFunc) (HashtblValue);
 
-typedef struct
-{
-	unsigned cap;
+typedef void (*HashtblDumpFunc) (HTNode*);
 
-	List** tbl;
+HashtblValue ht_value(HTNode*);
 
-	unsigned (*keyfunc) (void*);
-
-} Hashtbl;
+unsigned ht_weight(HTNode*);
 
 /**
  * hash table creation
  */
-Hashtbl* new_hashtbl(unsigned cap, unsigned (*keyfunc) (void*));
+Hashtbl* new_hashtbl(unsigned cap, HashtblKeyFunc keyfunc);
 
 /**
  * insert. O(1)
@@ -41,7 +31,7 @@ Hashtbl* new_hashtbl(unsigned cap, unsigned (*keyfunc) (void*));
  * insert the new val to hash table
  * if the value is existed, increase the number of value by 1
  */
-void ht_insert(Hashtbl* h, void* val);
+void ht_insert(Hashtbl* h, HashtblValue val);
 
 /**
  * insert. O(1)
@@ -49,7 +39,7 @@ void ht_insert(Hashtbl* h, void* val);
  * insert the new val to hash table multiple k times
  * if the value is existed, increase the number of value by 1
  */
-void ht_mulinsert(Hashtbl* h, void* val, unsigned k);
+void ht_mulinsert(Hashtbl* h, HashtblValue val, unsigned k);
 
 /**
  * delete. O(1)
@@ -61,6 +51,6 @@ void ht_delete(Hashtbl* h, unsigned key);
  */
 HTNode* ht_lookup(Hashtbl* h, unsigned key);
 
-void ht_dump(Hashtbl* h, void (*dumpfunc)(HTNode*));
+void ht_dump(Hashtbl* h, HashtblDumpFunc dumpfunc);
 
 #endif /* End of PHI_HASHTBL_H */

@@ -3,22 +3,17 @@
 
 #include <stdbool.h>
 
-typedef struct Node
-{
-	void* val;
-	struct Node* next;
-	struct Node* prev;
-} Node;
+typedef void* ListValue;
 
-typedef struct {
-	Node* head;
-	
-	unsigned size;
+typedef struct _Node Node;
 
-	Node* iter;
-} List;
+typedef struct _List List;
 
-Node* new_node(void* val);
+typedef void (*ListIterFunc) (List*, Node*);
+
+Node* new_node(ListValue val);
+
+ListValue node_value(Node*);
 
 void node_delete (List* l, Node* n);
 
@@ -26,7 +21,7 @@ List* new_list();
 
 void list_delete(List*);
 
-void ls_insert(List*, void* val);
+void ls_insert(List*, ListValue val);
 
 // set up list iterator. return the first node
 Node* ls_iter(List*);
@@ -39,6 +34,6 @@ Node* ls_prev(List*);
 
 bool ls_is_end(List*);
 
-void ls_foreach (List* l, void (*func)(List*, Node*));
+void ls_foreach (List* l, ListIterFunc func);
 
 #endif /* End of PHI_LIST_H */

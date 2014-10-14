@@ -2,7 +2,7 @@ CC=clang
 CFLAGS=-lphi
 LIB=-lphi
 
-all: clean mincut
+all: clear mincut
 
 mincut:
 	$(CC) mincut.c -o mincut $(LIB)

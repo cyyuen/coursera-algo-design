@@ -1,51 +1,39 @@
 #ifndef PHI_RANDSET_H
 #define PHI_RANDSET_H
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <stdbool.h>
 
-#include "hashtbl.h"
+typedef struct _RandSet RandSet;
 
-typedef struct
-{
-	void** buf;
-	unsigned top;
-	unsigned cap;
+typedef void* RandSetValue;
 
-	// key position mapping
-	Hashtbl* kpmap;
+typedef unsigned (*RandSetKeyFunc) (RandSetValue);
 
-	unsigned (*keyfunc) (void*);
+RandSet* new_randset(unsigned cap, RandSetKeyFunc);
 
-} RandSet;
+unsigned randset_size(RandSet* s);
 
-RandSet*
-new_randset(unsigned cap, unsigned (*keyfunc)(void*));
+void randset_mulpush(RandSet* s, RandSetValue val, int k);
 
-unsigned
-randset_size(RandSet* s);
+void randset_push(RandSet* s, RandSetValue val);
 
-void
-randset_mulpush(RandSet* s, void* val, int k);
+void randset_remove(RandSet* s, RandSetValue val);
 
-void
-randset_push(RandSet* s, void* val);
+RandSetValue randset_pop(RandSet* s);
 
-void
-randset_remove(RandSet* s, void* ele);
-
-void*
-randset_pop(RandSet* s);
-
-int
-randset_e_weight(RandSet* s, void* e);
+int randset_e_weight(RandSet* s, RandSetValue val);
 
 /*
  * These two RandSet must use the same keyfunc
  */
-void* randset_merge(RandSet* v, RandSet* u);
+RandSet* randset_merge(RandSet* v, RandSet* u);
 
 void randset_dump(RandSet* s);
+
+RandSetValue randset_iter(RandSet* s);
+
+RandSetValue randset_next(RandSet* s);
+
+bool randset_is_end(RandSet* s);
 
 #endif /* End of PHI_RANDSET_H */
