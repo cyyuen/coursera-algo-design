@@ -10,10 +10,10 @@
  * 
  * Use chaining implementation
  */
-struct _HTNode
+struct hashtbl_node_
 {
 	// the content
-	HashtblValue val;
+	hashtbl_t val;
 
 	unsigned key;
 
@@ -21,32 +21,32 @@ struct _HTNode
 	unsigned num;
 };
 
-struct _Hashtbl
+struct hashtbl_
 {
 	unsigned cap;
 
-	List** tbl;
+	list** tbl;
 
 	unsigned (*keyfunc) (void*);
 
 };
 
-HashtblValue 
-ht_value(HTNode* n) 
+hashtbl_t 
+hashtbl_value(hashtbl_node* n) 
 {
 	return n->val;
 }
 
 unsigned 
-ht_weight(HTNode* n) 
+hashtbl_weight(hashtbl_node* n) 
 {
 	return n->num;
 }
 
-HTNode*
-new_htnode(HashtblValue val, unsigned key) 
+hashtbl_node*
+new_hashtbl_node(hashtbl_t val, unsigned key) 
 {
-	HTNode* n = malloc(sizeof(HTNode));
+	hashtbl_node* n = malloc(sizeof(hashtbl_node));
 
 	n->val = val;
 	n->key = key;
@@ -56,7 +56,7 @@ new_htnode(HashtblValue val, unsigned key)
 }
 
 void
-htnode_delete(HTNode* n)
+hashtbl_node_delete(hashtbl_node* n)
 {
 	free(n);
 }
@@ -67,30 +67,30 @@ hashfunc(unsigned key, unsigned size)
 	return key % size;
 }
 
-Hashtbl* 
-new_hashtbl(unsigned cap, HashtblKeyFunc keyfunc)
+hashtbl* 
+new_hashtbl(unsigned cap, hashtbl_keyfunc keyfunc)
 {
-	Hashtbl* h = (Hashtbl*)malloc(sizeof(Hashtbl));
+	hashtbl* h = (hashtbl*)malloc(sizeof(hashtbl));
 	
 	h->cap = cap;
 	h->keyfunc = keyfunc;
-	h->tbl = malloc(sizeof(List*) * h->cap);
-	memset(h->tbl, 0, sizeof(List*) * h->cap);
+	h->tbl = malloc(sizeof(list*) * h->cap);
+	memset(h->tbl, 0, sizeof(list*) * h->cap);
 
 	return h;
 }
 
-HTNode* 
-ht_lookup(Hashtbl* h, unsigned key) 
+hashtbl_node* 
+hashtbl_lookup(hashtbl* h, unsigned key) 
 {
 	unsigned idx = hashfunc(key, h->cap);
 
-	List* l = h->tbl[idx];
+	list* l = h->tbl[idx];
 
 	if (l != NULL) {
-		for (Node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
+		for (list_node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
 
-			if (key == ((HTNode*)node_value(n))->key) {
+			if (key == ((hashtbl_node*)node_value(n))->key) {
 				return node_value(n);
 			}
 		}
@@ -100,11 +100,11 @@ ht_lookup(Hashtbl* h, unsigned key)
 }
 
 void 
-ht_mulinsert(Hashtbl* h, HashtblValue val, unsigned k)
+hashtbl_mulinsert(hashtbl* h, hashtbl_t val, unsigned k)
 {
 	unsigned key = (*(h->keyfunc))(val);
 	
-	HTNode* hn = ht_lookup(h, key);
+	hashtbl_node* hn = hashtbl_lookup(h, key);
 
 	if (hn != NULL) {
 		hn->num += k;
@@ -113,7 +113,7 @@ ht_mulinsert(Hashtbl* h, HashtblValue val, unsigned k)
 
 	unsigned idx = hashfunc(key, h->cap);
 
-	HTNode* n = new_htnode(val, key);
+	hashtbl_node* n = new_hashtbl_node(val, key);
 	n->num = k;
 
 	if(h->tbl[idx] == NULL) {
@@ -125,27 +125,27 @@ ht_mulinsert(Hashtbl* h, HashtblValue val, unsigned k)
 
 
 void 
-ht_insert(Hashtbl* h, HashtblValue val)
+hashtbl_insert(hashtbl* h, hashtbl_t val)
 {
-	ht_mulinsert(h, val, 1);
+	hashtbl_mulinsert(h, val, 1);
 }
 
 void 
-ht_delete(Hashtbl* h, unsigned key) 
+hashtbl_delete(hashtbl* h, unsigned key) 
 {
 	unsigned idx = hashfunc(key, h->cap);
 
-	List* l = h->tbl[idx];
+	list* l = h->tbl[idx];
 
 	if (l != NULL) {
 
-		for (Node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
+		for (list_node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
 			
-			HTNode* htn = node_value(n);
+			hashtbl_node* htn = node_value(n);
 
 			if (key == htn->key) {
 				node_delete(l, n);
-				htnode_delete(htn);
+				hashtbl_node_delete(htn);
 				return;
 			}
 		}
@@ -153,15 +153,15 @@ ht_delete(Hashtbl* h, unsigned key)
 }
 
 static
-void builtin_dumpfunc(HTNode* n)
+void builtin_dumpfunc(hashtbl_node* n)
 {
 	printf("(%u:%u) ", n->key, n->num);
 }
 
 
-void ht_dump(Hashtbl* h, HashtblDumpFunc dumpfunc)
+void hashtbl_dump(hashtbl* h, hashtbl_dumpfunc dumpfunc)
 {
-	void (*func) (HTNode*) = NULL;
+	void (*func) (hashtbl_node*) = NULL;
 
 	if (dumpfunc == NULL)
 	{
@@ -171,13 +171,13 @@ void ht_dump(Hashtbl* h, HashtblDumpFunc dumpfunc)
 	}
 
 	for (int i = 0; i!=h->cap; ++i) {
-		List* l = h->tbl[i];
+		list* l = h->tbl[i];
 
 		if (l!=NULL) {
 			printf("%d: ", i);
 
-			for (Node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
-				(*func)((HTNode*)node_value(n));
+			for (list_node* n = ls_iter(l); !ls_is_end(l); n = ls_next(l)) {
+				(*func)((hashtbl_node*)node_value(n));
 			}
 
 			printf("\n");

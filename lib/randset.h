@@ -1,39 +1,39 @@
-#ifndef PHI_RANDSET_H
-#define PHI_RANDSET_H
+#ifndef __PHI_randset_H__
+#define __PHI_randset_H__
 
 #include <stdbool.h>
 
-typedef struct _RandSet RandSet;
+typedef struct randset_ randset;
 
-typedef void* RandSetValue;
+typedef void* randset_t;
 
-typedef unsigned (*RandSetKeyFunc) (RandSetValue);
+typedef unsigned (*randset_keyfunc) (randset_t);
 
-RandSet* new_randset(unsigned cap, RandSetKeyFunc);
+randset* new_randset(unsigned cap, randset_keyfunc);
 
-unsigned randset_size(RandSet* s);
+unsigned randset_size(randset* s);
 
-void randset_mulpush(RandSet* s, RandSetValue val, int k);
+void randset_mulpush(randset* s, randset_t val, int k);
 
-void randset_push(RandSet* s, RandSetValue val);
+void randset_push(randset* s, randset_t val);
 
-void randset_remove(RandSet* s, RandSetValue val);
+void randset_remove(randset* s, randset_t val);
 
-RandSetValue randset_pop(RandSet* s);
+randset_t randset_pop(randset* s);
 
-int randset_e_weight(RandSet* s, RandSetValue val);
+int randset_e_weight(randset* s, randset_t val);
 
 /*
- * These two RandSet must use the same keyfunc
+ * These two randset must use the same keyfunc
  */
-RandSet* randset_merge(RandSet* v, RandSet* u);
+randset* randset_merge(randset* v, randset* u);
 
-void randset_dump(RandSet* s);
+void randset_dump(randset* s);
 
-RandSetValue randset_iter(RandSet* s);
+randset_t randset_iter(randset* s);
 
-RandSetValue randset_next(RandSet* s);
+randset_t randset_next(randset* s);
 
-bool randset_is_end(RandSet* s);
+bool randset_is_end(randset* s);
 
-#endif /* End of PHI_RANDSET_H */
+#endif /* End of __PHI_randset_H__ */

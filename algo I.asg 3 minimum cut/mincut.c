@@ -12,7 +12,7 @@ const char* D = " \t\n";
 
 typedef struct{
 	unsigned id;
-	RandSet* adjc;
+	randset* adjc;
 } Vertex;
 
 unsigned
@@ -28,7 +28,7 @@ add_adjc(Vertex* v, Vertex* u) {
 // vertex* array A is also a random set
 unsigned DATA[N][N];
 Vertex** A;
-RandSet* V;
+randset* V;
 
 int size = 0;
 

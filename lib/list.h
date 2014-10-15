@@ -1,39 +1,41 @@
-#ifndef PHI_LIST_H
-#define PHI_LIST_H
+#ifndef __PHI_LIST_H__
+#define __PHI_LIST_H__
 
 #include <stdbool.h>
 
-typedef void* ListValue;
+typedef void* list_node_t;
 
-typedef struct _Node Node;
+typedef unsigned list_size_t;
 
-typedef struct _List List;
+typedef struct list_node_ list_node;
 
-typedef void (*ListIterFunc) (List*, Node*);
+typedef struct list_ list;
 
-Node* new_node(ListValue val);
+typedef void (*list_iter_func_t) (list*, list_node*);
 
-ListValue node_value(Node*);
+list_node* new_node(list_node_t val);
 
-void node_delete (List* l, Node* n);
+list_node_t node_value(list_node*);
 
-List* new_list();
+void node_delete (list* l, list_node* n);
 
-void list_delete(List*);
+list* new_list();
 
-void ls_insert(List*, ListValue val);
+void list_delete(list*);
+
+void ls_insert(list*, list_node_t val);
 
 // set up list iterator. return the first node
-Node* ls_iter(List*);
+list_node* ls_iter(list*);
 
 // next node 
-Node* ls_next(List*);
+list_node* ls_next(list*);
 
 // previous node
-Node* ls_prev(List*);
+list_node* ls_prev(list*);
 
-bool ls_is_end(List*);
+bool ls_is_end(list*);
 
-void ls_foreach (List* l, ListIterFunc func);
+void ls_foreach (list* l, list_iter_func_t func);
 
-#endif /* End of PHI_LIST_H */
+#endif /* End of __PHI_LIST_H__ */

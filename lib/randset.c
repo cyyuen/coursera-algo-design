@@ -5,16 +5,16 @@
 #include "randset.h"
 #include "hashtbl.h"
 
-struct _RandSet
+struct randset_
 {
-	RandSetValue* buf;
+	randset_t* buf;
 	unsigned top;
 	unsigned cap;
 
 	// key position mapping
-	Hashtbl* kpmap;
+	hashtbl* kpmap;
 
-	RandSetKeyFunc keyfunc;
+	randset_keyfunc keyfunc;
 
 	unsigned iter;
 };
@@ -22,12 +22,12 @@ struct _RandSet
 typedef struct{
 	unsigned key;
 	unsigned pos;
-} KPMap;
+} kpmap;
 
-static KPMap*
+static kpmap*
 new_kpmap(unsigned key, unsigned pos)
 {
-	KPMap* m = malloc(sizeof(KPMap));
+	kpmap* m = malloc(sizeof(kpmap));
 	
 	m->key = key;
 	m->pos = pos;
@@ -36,17 +36,17 @@ new_kpmap(unsigned key, unsigned pos)
 }
 
 static unsigned
-kpmap_keyfunc (RandSetValue val) {
-	return ((KPMap*)val)->key;
+kpmap_keyfunc (randset_t val) {
+	return ((kpmap*)val)->key;
 }
 
-RandSet*
-new_randset(unsigned cap, RandSetKeyFunc keyfunc)
+randset*
+new_randset(unsigned cap, randset_keyfunc keyfunc)
 {
-	RandSet* s = malloc(sizeof(RandSet));
+	randset* s = malloc(sizeof(randset));
 	s->cap = cap;
 
-	s->buf = malloc(sizeof(RandSetValue) * s->cap);
+	s->buf = malloc(sizeof(randset_t) * s->cap);
 	s->top = 0;
 
 	s->kpmap = new_hashtbl(cap, &kpmap_keyfunc);
@@ -59,32 +59,32 @@ new_randset(unsigned cap, RandSetKeyFunc keyfunc)
 }
 
 unsigned
-randset_size(RandSet* s) 
+randset_size(randset* s) 
 {
 	return s->top;
 }
 
 static unsigned
-randset_last(RandSet* s) {
+randset_last(randset* s) {
 	return randset_size(s) - 1;
 }
 
 bool 
-randset_is_end(RandSet* s) 
+randset_is_end(randset* s) 
 {
 	return s->iter == randset_size(s);
 }
 
-RandSetValue 
-randset_iter(RandSet* s) 
+randset_t 
+randset_iter(randset* s) 
 {	
 	s->iter = 0;
 
 	return s->buf[s->iter];
 };
 
-RandSetValue 
-randset_next(RandSet* s) 
+randset_t 
+randset_next(randset* s) 
 {
 	if (randset_is_end(s)) {
 		return NULL;
@@ -96,60 +96,60 @@ randset_next(RandSet* s)
 }
 
 void
-randset_mulpush(RandSet* s, RandSetValue val, int k) {
+randset_mulpush(randset* s, randset_t val, int k) {
 	unsigned key = (*s->keyfunc)(val);
 
-	HTNode* n = ht_lookup(s->kpmap, key);
+	hashtbl_node* n = hashtbl_lookup(s->kpmap, key);
 
 	// Not found. This is a new value
 	if (n == NULL) {
 		s->buf[s->top] = val;
 
-		KPMap* m = new_kpmap(key, s->top);
+		kpmap* m = new_kpmap(key, s->top);
 
-		ht_mulinsert(s->kpmap, m, k);
+		hashtbl_mulinsert(s->kpmap, m, k);
 
 		s->top++;
 	} else {
-		ht_mulinsert(s->kpmap, ht_value(n), k);
+		hashtbl_mulinsert(s->kpmap, hashtbl_value(n), k);
 	}
 }
 
 void
-randset_push(RandSet* s, RandSetValue val) {
+randset_push(randset* s, randset_t val) {
 	randset_mulpush(s, val, 1);
 }
 
-RandSetValue
-randset_get(RandSet* s, unsigned idx) {
+randset_t
+randset_get(randset* s, unsigned idx) {
 	return s->buf[idx];
 }
 
-RandSetValue 
-randset_pop_at(RandSet* s, unsigned idx) 
+randset_t 
+randset_pop_at(randset* s, unsigned idx) 
 {
 	if (idx > randset_last(s) || randset_size(s) == 0) {
 		printf("index %u\n", idx);
 		return NULL;
 	}
 
-	RandSetValue v = randset_get(s, idx);
+	randset_t v = randset_get(s, idx);
 	unsigned vkey = s->keyfunc(v);
 
-	ht_delete(s->kpmap,  vkey);
+	hashtbl_delete(s->kpmap,  vkey);
 
 	if (idx != randset_last(s)) {
 
 		// move the last element to the idx
-		RandSetValue u = s->buf[randset_last(s)];
+		randset_t u = s->buf[randset_last(s)];
 
 		s->buf[idx] = u;
 
 		unsigned ukey = (*s->keyfunc)(u);
 
-		HTNode* htn = ht_lookup(s->kpmap, ukey);
+		hashtbl_node* htn = hashtbl_lookup(s->kpmap, ukey);
 
-		((KPMap*)ht_value(htn))->pos = idx;
+		((kpmap*)hashtbl_value(htn))->pos = idx;
 	}
 	
 	s->top--;
@@ -158,42 +158,42 @@ randset_pop_at(RandSet* s, unsigned idx)
 }
 
 void
-randset_remove(RandSet* s, RandSetValue ele) {
+randset_remove(randset* s, randset_t ele) {
 	unsigned key = (*s->keyfunc)(ele);
 
-	HTNode* n = ht_lookup(s->kpmap, key);
+	hashtbl_node* n = hashtbl_lookup(s->kpmap, key);
 
 	if (n == NULL) {
 		return;
 	}
 
-	unsigned idx = ((KPMap*)ht_value(n))->pos;
+	unsigned idx = ((kpmap*)hashtbl_value(n))->pos;
 	
 	randset_pop_at(s, idx);
 }
 
-RandSetValue
-randset_pop(RandSet* s) {
+randset_t
+randset_pop(randset* s) {
 	unsigned idx = rand() % randset_size(s);
 	return randset_pop_at(s, idx);
 }
 
 int
-randset_e_weight(RandSet* s, RandSetValue e) 
+randset_e_weight(randset* s, randset_t e) 
 {
 	unsigned key = (*s->keyfunc)(e);
 
-	return ht_weight(ht_lookup(s->kpmap, key));
+	return hashtbl_weight(hashtbl_lookup(s->kpmap, key));
 }
 
 /*
- * This two RandSet must use the same keyfunc
+ * This two randset must use the same keyfunc
  */
-RandSet*
-randset_merge(RandSet* v, RandSet* u) {
-	// use RandSet v as based RandSet
+randset*
+randset_merge(randset* v, randset* u) {
+	// use randset v as based randset
 
-	for (RandSetValue i = randset_iter(u); 
+	for (randset_t i = randset_iter(u); 
 		 !randset_is_end(u); 
 		 i = randset_next(u)) {
 
@@ -204,19 +204,19 @@ randset_merge(RandSet* v, RandSet* u) {
 }
 
 static void
-randset_ht_dump_helper(HTNode* n) {
-	KPMap* m = ht_value(n);
+randset_hashtbl_dump_helper(hashtbl_node* n) {
+	kpmap* m = hashtbl_value(n);
 
-	printf("(%u:%u)", m->pos, ht_weight(n));
+	printf("(%u:%u)", m->pos, hashtbl_weight(n));
 }
 
-void randset_dump(RandSet* s) {
+void randset_dump(randset* s) {
 	
 	printf("top:%u cap:%u\n", s->top, s->cap);
 
 	printf("ids:");
 
-	for (RandSetValue i = randset_iter(s); 
+	for (randset_t i = randset_iter(s); 
 		 !randset_is_end(s); 
 		 i = randset_next(s)) {
 		printf("%d\t", (*(s->keyfunc))(i));
@@ -226,6 +226,6 @@ void randset_dump(RandSet* s) {
 
 	printf("\n");
 
-	ht_dump(s->kpmap, &randset_ht_dump_helper);
+	hashtbl_dump(s->kpmap, &randset_hashtbl_dump_helper);
 	
 }

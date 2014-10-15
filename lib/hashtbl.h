@@ -1,29 +1,29 @@
-#ifndef PHI_HASHTBL_H
-#define PHI_HASHTBL_H
+#ifndef __PHI_HASHTBL_H__
+#define __PHI_HASHTBL_H__
 
 /**
  * Hash Table 
  * 
  * Use chaining implementation
  */
-typedef struct _HTNode HTNode;
+typedef struct hashtbl_node_ hashtbl_node;
 
-typedef struct _Hashtbl Hashtbl;
+typedef struct hashtbl_ hashtbl;
 
-typedef void* HashtblValue;
+typedef void* hashtbl_t;
 
-typedef unsigned (*HashtblKeyFunc) (HashtblValue);
+typedef unsigned (*hashtbl_keyfunc) (hashtbl_t);
 
-typedef void (*HashtblDumpFunc) (HTNode*);
+typedef void (*hashtbl_dumpfunc) (hashtbl_node*);
 
-HashtblValue ht_value(HTNode*);
+hashtbl_t hashtbl_value(hashtbl_node*);
 
-unsigned ht_weight(HTNode*);
+unsigned hashtbl_weight(hashtbl_node*);
 
 /**
  * hash table creation
  */
-Hashtbl* new_hashtbl(unsigned cap, HashtblKeyFunc keyfunc);
+hashtbl* new_hashtbl(unsigned cap, hashtbl_keyfunc keyfunc);
 
 /**
  * insert. O(1)
@@ -31,7 +31,7 @@ Hashtbl* new_hashtbl(unsigned cap, HashtblKeyFunc keyfunc);
  * insert the new val to hash table
  * if the value is existed, increase the number of value by 1
  */
-void ht_insert(Hashtbl* h, HashtblValue val);
+void hashtbl_insert(hashtbl* h, hashtbl_t val);
 
 /**
  * insert. O(1)
@@ -39,18 +39,18 @@ void ht_insert(Hashtbl* h, HashtblValue val);
  * insert the new val to hash table multiple k times
  * if the value is existed, increase the number of value by 1
  */
-void ht_mulinsert(Hashtbl* h, HashtblValue val, unsigned k);
+void hashtbl_mulinsert(hashtbl* h, hashtbl_t val, unsigned k);
 
 /**
  * delete. O(1)
  */
-void ht_delete(Hashtbl* h, unsigned key);
+void hashtbl_delete(hashtbl* h, unsigned key);
 
 /**
  * lookup. O(1)
  */
-HTNode* ht_lookup(Hashtbl* h, unsigned key);
+hashtbl_node* hashtbl_lookup(hashtbl* h, unsigned key);
 
-void ht_dump(Hashtbl* h, HashtblDumpFunc dumpfunc);
+void hashtbl_dump(hashtbl* h, hashtbl_dumpfunc dumpfunc);
 
-#endif /* End of PHI_HASHTBL_H */
+#endif /* End of __PHI_HASHTBL_H__ */
